@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Orthogonal Connector Router</title>
+    <script src="orthogonal-connector.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<h1>Circuit Forge</h1>
+<canvas id="canvas"></canvas>
+<script>
+
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+
+    let shapeA = {left: 50, top: 50, width: 100, height: 100};
+    let shapeB = {left: 200, top: 200, width: 250, height: 100};
+    let shapes = [shapeA, shapeB];
+
+    let dragging = false;
+    let selectedShape = null;
+    let offsetX, offsetY;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        draw();
+    }
+
+    function draw() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        const path = OrthogonalConnector.route({
+            pointA: {shape: shapeA, side: 'bottom', distance: 0.5},
+            pointB:{ shape: shapeB, side: 'right', distance: 0.5},
+            shapeMargin: 10,
+            globalBoundsMargin: 10,
+            globalBounds: {left: 0, top: 0, width: canvas.width, height: canvas.height},
+        });
+
+        // Draw shapes
+        context.strokeRect(shapeA.left, shapeA.top, shapeA.width, shapeA.height);
+        context.strokeRect(shapeB.left, shapeB.top, shapeB.width, shapeB.height);
+
+        // Draw path
+        const start = path.shift();
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        path.forEach(pt => context.lineTo(pt.x, pt.y));
+        context.stroke();
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        const mouseX = e.clientX - canvas.getBoundingClientRect().left;
+        const mouseY = e.clientY - canvas.getBoundingClientRect().top;
+
+        for (const shape of shapes) {
+            if (mouseX >= shape.left && mouseX <= shape.left + shape.width &&
+                mouseY >= shape.top && mouseY <= shape.top + shape.height) {
+                dragging = true;
+                selectedShape = shape;
+                offsetX = mouseX - selectedShape.left;
+                offsetY = mouseY - selectedShape.top;
+                break;
+            }
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (dragging && selectedShape) {
+            const mouseX = e.clientX - canvas.getBoundingClientRect().left;
+            const mouseY = e.clientY - canvas.getBoundingClientRect().top;
+            selectedShape.left = mouseX - offsetX;
+            selectedShape.top = mouseY - offsetY;
+            draw();
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        dragging = false;
+        selectedShape = null;
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    resizeCanvas(); // Initial call to set canvas size and draw
+
+</script>
+<ul>
+    <li><a href="https://orthogonal.jose.page/" target="_blank">Live Demo Editor</a></li>
+    <li><a href="https://gist.github.com/menendezpoo/4a8894c152383b9d7a870c24a04447e4" target="_blank">Github Gist</a></li>
+</ul>
+</body>
+</html>
